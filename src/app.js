@@ -18,7 +18,7 @@ api.use(requireAuth);
 api.get('/author/', (req, res) => {
     res.json({
         login: process.env.MOODLE_LOGIN,
-        fullname: process.env.MOODLE_FULL_NAME,
+        fullName: process.env.MOODLE_FULL_NAME,
     });
 });
 
