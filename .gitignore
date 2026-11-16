@@ -4,4 +4,4 @@
 !.env.example
 coverage/
 *.log
-node-modules
+node_modules
