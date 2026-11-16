@@ -1,5 +1,7 @@
 import express from 'express';
 import { requireAuth } from "./middleware/auth.js";
+import { tasksRouter } from "./routes/tasks.routes.js";
+import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
 
@@ -20,4 +22,8 @@ api.get('/author/', (req, res) => {
     });
 });
 
+api.use('/tasks/', tasksRouter);
+
 app.use('/api/', api);
+
+app.use(errorHandler);
