@@ -2,10 +2,16 @@ import express from 'express';
 import { requireAuth } from "./middleware/auth.js";
 import { tasksRouter } from "./routes/tasks.routes.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const app = express();
 
 app.use(express.json());
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+
+app.use(express.static(path.resolve(currentDir, '../public')));
 
 app.get('/login/', (req, res) => {
     res.type('text/plain').send(process.env.MOODLE_LOGIN)
