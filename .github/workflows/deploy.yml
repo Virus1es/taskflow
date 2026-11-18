@@ -173,8 +173,13 @@ jobs:
 
         - name: Smoke test - public login
           run: |
-            curl --fail -show-error --silent \
+            response=$(curl \
+              --fail-with-body \
+              --show-error \
+              --silent \
               --retry 3 \
               --retry-delay 5 \
-              "${APP_URL}/login/"
-              | grep -Fx 'troan'
+              "${APP_URL}/login/")
+            
+            echo "Response: $response"
+            test "$response" = "troan"
