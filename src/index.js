@@ -8,7 +8,7 @@ async function start() {
     try {
         await pool.query('SELECT 1');
 
-        app.listen(port, () => {
+        app.listen(port, '0.0.0.0', () => {
             process.stdout.write(`Server started on port ${port}\n`);
         });
     } catch (error) {
