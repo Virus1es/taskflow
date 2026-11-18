@@ -1,10 +1,8 @@
 import pg from 'pg';
 
-const { Pool } = pg;
-
 function loadCa() {
     if (process.env.DB_CA_B64) {
-        return Buffer.from(process.env.DB_CA_B64, 'base64').toString('utf8');
+        return Buffer.from(process.env.DB_CA_B64.trim(), 'base64').toString('utf8');
     }
     if (process.env.DB_CA) {
         return process.env.DB_CA.replace(/\\n/g, '\n');
@@ -14,11 +12,13 @@ function loadCa() {
 
 const ca = loadCa();
 
-export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: ca ?
-        { ca, rejectUnauthorized: true } :
-        { rejectUnauthorized: false },
-    max: 5,
+const url = new URL(process.env.DATABASE_URL);
+url.searchParams.delete('sslmode');
+
+console.log('DB host:', url.host, '| CA loaded:', Boolean(ca?.includes('BEGIN CERTIFICATE')));
+
+export const pool = new pg.Pool({
+    connectionString: url.toString(),
+    ssl: ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false },
     connectionTimeoutMillis: 5000,
 });
