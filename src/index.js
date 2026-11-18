@@ -13,8 +13,6 @@ server.on('error', (err) => {
     process.exitCode = 1;
 });
 
-
-
 async function checkDatabase() {
     try {
         await pool.query('SELECT 1');
