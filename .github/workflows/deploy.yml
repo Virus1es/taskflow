@@ -1,0 +1,152 @@
+name: TaskFlow
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taskflow-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: cr.yandex/crp1lku1961752mnu8qb/taskflow
+  APP_URL: https://bbac3ro71q4bds7oird2.containers.yandexcloud.net
+
+jobs:
+  test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: taskflow
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: taskflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taskflow -d taskflow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://taskflow:test_password@localhost:5432/taskflow
+      API_TOKEN: ci_test_token
+      MOODLE_LOGIN: troan
+      MOODLE_FULL_NAME: Yakubenko Vadim
+      PORT: 3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize database
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          PGPASSWORD=test_password psql \
+            -h localhost \
+            -U taskflow \
+            -d taskflow \
+            -v ON_ERROR_STOP=1 \
+            -f db/init.sql
+
+      - name: Start Express
+        run: |
+          node src/index.js > server.log 2>&1 &
+          echo $! > server.pid
+          
+          for i in {1..30}; do
+            if curl --fail --silent http://localhost:3000/login/ > /dev/null; then
+              exit 0
+            fi
+              sleep 1
+          done
+          
+          cat server.log
+          exit 1
+
+      - name: Run integration tests
+        run: npm test
+
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taskflow-ci-server-logs
+          path: server.log
+          if-no-files-found: ignore
+
+  deploy:
+      name: Build and deploy
+      needs: test
+      if: github.event_name != 'pull_request'
+      runs-on: ubuntu-latest
+
+      permissions:
+        contents: read
+        id-token: write
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Login to Yandex Container Registry
+          uses: yc-actions/yc-cr-login@v3
+          with:
+            yc-sa-id: ajepnt1lu858a8lc4ege
+
+        - name: Build and push image
+          uses: docker/build-push-action@v6
+          with:
+            context: .
+            platforms: linux/amd64
+            push: true
+            provenance: false
+            sbom: false
+            tags: ${{ env.IMAGE }}:${{ github.sha }}
+
+        - name: Deploy To Yandex Serverless Container
+          uses: yc-actions/yc-sls-container-deploy@v5
+          with:
+            yc-sa-id: ajepnt1lu858a8lc4ege
+            folder-id: b1ghih3ae5ru0p5c9rdp
+            container-name: taskflow
+            revision-image-url: ${{ env.IMAGE }}:${{ github.sha }}
+            revision-cores: '1'
+            revision-memory: '512Mb'
+            revision-execution-timeout: '30'
+            revision-env: |
+              NODE_ENV=production
+              PORT:8080
+              MOODLE_LOGIN=troan
+              MOODLE_FULL_NAME=Yakubenko Vadim
+            revision-secrets: |
+              API_TOKEN=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/API_TOKEN
+              DATABASE_URL=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/DATABASE_URL
+
+        - name: Smoke test - public login
+          run: |
+            curl --fail -show-error --silent \
+              --retry 3 \
+              --retry-delay 5 \
+              "${APP_URL}/login/"
+              | grep -Fx 'troan'
