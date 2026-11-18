@@ -129,10 +129,18 @@ jobs:
               ref
             }'
 
-        - name: Login to Yandex Container Registry
-          uses: yc-actions/yc-cr-login@v3
+        - name: Get Yandex Cloud IAM token
+          id: yc-token
+          uses: docker://ghcr.io/yc-actions/yc-iam-token-fed:1.0.0
           with:
-            yc-sa-id: ajepnt1lu858a8lc4ege
+            yc-sa-id: ${{ secrets.YC_DEPLOY_SA_ID }}
+
+        - name: Login to Yandex Container Registry
+          uses: docker/login-action@v3
+          with:
+            registry: cr.yandex
+            username: iam
+            password: ${{ steps.yc-token.outputs.token }}
 
         - name: Build and push image
           uses: docker/build-push-action@v6
@@ -147,16 +155,17 @@ jobs:
         - name: Deploy To Yandex Serverless Container
           uses: yc-actions/yc-sls-container-deploy@v5
           with:
-            yc-sa-id: ajepnt1lu858a8lc4ege
-            folder-id: b1ghih3ae5ru0p5c9rdp
+            yc-iam-token: ${{ steps.yc-token.outputs.token }}
             container-name: taskflow
-            revision-image-url: ${{ env.IMAGE }}:${{ github.sha }}
-            revision-cores: '1'
-            revision-memory: '512Mb'
-            revision-execution-timeout: '30'
+            folder-id: b1ghih3ae5ru0p5c9rdp
+            revision-service-account-id: ${{ secrets.YC_RUNTIME_SA_ID }}
+            revision-cores: 1
+            revision-memory: 512Mb
+            revision-execution-timeout: 30
+            revision-image-url: cr.yandex/crp1lku1961752mnu8qb/taskflow:${{ github.sha }}
             revision-env: |
               NODE_ENV=production
-              PORT:8080
+              PORT=8080
               MOODLE_LOGIN=troan
               MOODLE_FULL_NAME=Yakubenko Vadim
             revision-secrets: |
