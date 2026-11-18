@@ -27,4 +27,4 @@ async function checkDatabase() {
     }
 }
 
-void checkDatabase();
+// void checkDatabase();
