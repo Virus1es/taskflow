@@ -165,7 +165,6 @@ jobs:
             revision-image-url: cr.yandex/crp1lku1961752mnu8qb/taskflow:${{ github.sha }}
             revision-env: |
               NODE_ENV=production
-              PORT=8080
               MOODLE_LOGIN=troan
               MOODLE_FULL_NAME=Yakubenko Vadim
             revision-secrets: |
