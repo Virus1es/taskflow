@@ -167,6 +167,10 @@ jobs:
               NODE_ENV=production
               MOODLE_LOGIN=troan
               MOODLE_FULL_NAME=Yakubenko Vadim
+            revision-secrets: |
+              API_TOKEN=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/API_TOKEN
+              DATABASE_URL=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/DATABASE_URL
+
 
         - name: Smoke test - public login
           timeout-minutes: 2

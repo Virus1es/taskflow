@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "node src/diagnostic.js",
+    "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "node --test"
   },
