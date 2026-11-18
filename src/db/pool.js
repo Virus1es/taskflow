@@ -15,8 +15,6 @@ const ca = loadCa();
 const url = new URL(process.env.DATABASE_URL);
 url.searchParams.delete('sslmode');
 
-console.log('DB host:', url.host, '| CA loaded:', Boolean(ca?.includes('BEGIN CERTIFICATE')));
-
 export const pool = new pg.Pool({
     connectionString: url.toString(),
     ssl: ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false },
