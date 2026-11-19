@@ -44,6 +44,7 @@ jobs:
       MOODLE_LOGIN: troan
       MOODLE_FULL_NAME: Yakubenko Vadim
       PORT: 3000
+      DB_SSL: 'false'
 
     steps:
       - name: Checkout
