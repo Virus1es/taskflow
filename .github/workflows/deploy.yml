@@ -84,6 +84,12 @@ jobs:
           cat server.log
           exit 1
 
+      - name: Check PostgreSQL connection and schema
+        run: |
+          pg_isready -h localhost -p 5432 -U taskflow
+          psql "$DATABASE_URL" -c "SELECT current_database(), current_user;"
+          psql "$DATABASE_URL" -c "\dt public.*"
+
       - name: Run integration tests
         run: npm test
 
