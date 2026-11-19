@@ -95,75 +95,75 @@ jobs:
           path: server.log
           if-no-files-found: ignore
 
-  deploy:
-      name: Build and deploy
-      needs: test
-      if: github.event_name != 'pull_request'
-      runs-on: ubuntu-latest
-
-      permissions:
-        contents: read
-        id-token: write
-
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-
-        - name: Get Yandex Cloud IAM token
-          id: yc-token
-          uses: docker://ghcr.io/yc-actions/yc-iam-token-fed:1.0.0
-          with:
-            yc-sa-id: ${{ secrets.YC_DEPLOY_SA_ID }}
-
-        - name: Login to Yandex Container Registry
-          uses: docker/login-action@v3
-          with:
-            registry: cr.yandex
-            username: iam
-            password: ${{ steps.yc-token.outputs.token }}
-
-        - name: Build and push image
-          uses: docker/build-push-action@v6
-          with:
-            context: .
-            platforms: linux/amd64
-            push: true
-            provenance: false
-            sbom: false
-            tags: ${{ env.IMAGE }}:${{ github.sha }}
-
-        - name: Deploy To Yandex Serverless Container
-          uses: yc-actions/yc-sls-container-deploy@v5
-          with:
-            yc-iam-token: ${{ steps.yc-token.outputs.token }}
-            container-name: taskflow
-            folder-id: b1ghih3ae5ru0p5c9rdp
-            revision-service-account-id: ${{ secrets.YC_RUNTIME_SA_ID }}
-            revision-cores: 1
-            revision-memory: 512Mb
-            revision-execution-timeout: 30
-            revision-image-url: cr.yandex/crp1lku1961752mnu8qb/taskflow:${{ github.sha }}
-            revision-env: |
-              NODE_ENV=production
-              MOODLE_LOGIN=troan
-              MOODLE_FULL_NAME=Yakubenko Vadim
-            revision-secrets: |
-              API_TOKEN=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/API_TOKEN
-              DATABASE_URL=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/DATABASE_URL
-
-
-        - name: Smoke test - public login
-          timeout-minutes: 2
-          run: |
-            response=$(curl \
-              --fail-with-body \
-              --show-error \
-              --silent \
-              --connect-timeout 5 \
-              --max-time 15 \
-              --retry 2 \
-              --retry-delay 3 \
-              "${APP_URL}/login/")
-
-            echo "Response: $response"
-            test "$response" = "troan"
+#  deploy:
+#      name: Build and deploy
+#      needs: test
+#      if: github.event_name != 'pull_request'
+#      runs-on: ubuntu-latest
+#
+#      permissions:
+#        contents: read
+#        id-token: write
+#
+#      steps:
+#        - name: Checkout
+#          uses: actions/checkout@v4
+#
+#        - name: Get Yandex Cloud IAM token
+#          id: yc-token
+#          uses: docker://ghcr.io/yc-actions/yc-iam-token-fed:1.0.0
+#          with:
+#            yc-sa-id: ${{ secrets.YC_DEPLOY_SA_ID }}
+#
+#        - name: Login to Yandex Container Registry
+#          uses: docker/login-action@v3
+#          with:
+#            registry: cr.yandex
+#            username: iam
+#            password: ${{ steps.yc-token.outputs.token }}
+#
+#        - name: Build and push image
+#          uses: docker/build-push-action@v6
+#          with:
+#            context: .
+#            platforms: linux/amd64
+#            push: true
+#            provenance: false
+#            sbom: false
+#            tags: ${{ env.IMAGE }}:${{ github.sha }}
+#
+#        - name: Deploy To Yandex Serverless Container
+#          uses: yc-actions/yc-sls-container-deploy@v5
+#          with:
+#            yc-iam-token: ${{ steps.yc-token.outputs.token }}
+#            container-name: taskflow
+#            folder-id: b1ghih3ae5ru0p5c9rdp
+#            revision-service-account-id: ${{ secrets.YC_RUNTIME_SA_ID }}
+#            revision-cores: 1
+#            revision-memory: 512Mb
+#            revision-execution-timeout: 30
+#            revision-image-url: cr.yandex/crp1lku1961752mnu8qb/taskflow:${{ github.sha }}
+#            revision-env: |
+#              NODE_ENV=production
+#              MOODLE_LOGIN=troan
+#              MOODLE_FULL_NAME=Yakubenko Vadim
+#            revision-secrets: |
+#              API_TOKEN=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/API_TOKEN
+#              DATABASE_URL=${{ vars.LOCKBOX_SECRET_ID }}/${{ vars.LOCKBOX_VERSION_ID }}/DATABASE_URL
+#
+#
+#        - name: Smoke test - public login
+#          timeout-minutes: 2
+#          run: |
+#            response=$(curl \
+#              --fail-with-body \
+#              --show-error \
+#              --silent \
+#              --connect-timeout 5 \
+#              --max-time 15 \
+#              --retry 2 \
+#              --retry-delay 3 \
+#              "${APP_URL}/login/")
+#
+#            echo "Response: $response"
+#            test "$response" = "troan"
